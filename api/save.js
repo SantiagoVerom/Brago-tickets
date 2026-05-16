@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { put } from '@vercel/blob';
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -9,9 +9,12 @@ export default async function handler(req, res) {
     const { html, nombre, tel } = req.body;
     if (!html) return res.status(400).json({ error: 'HTML requerido' });
     const id = Math.random().toString(36).substring(2,10) + Date.now().toString(36);
-    await kv.set('t:' + id, JSON.stringify({ html, nombre, tel }), { ex: 31536000 });
-    const url = 'https://' + req.headers.host + '/t/' + id;
-    return res.status(200).json({ url });
+    const blob = await put(`tickets/${id}.html`, html, {
+      access: 'public',
+      contentType: 'text/html; charset=utf-8',
+      addRandomSuffix: false,
+    });
+    return res.status(200).json({ url: blob.url });
   } catch(e) {
     return res.status(500).json({ error: e.message });
   }
